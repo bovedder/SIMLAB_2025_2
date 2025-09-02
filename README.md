@@ -48,7 +48,6 @@ El temario está dividido en las siguientes secciones:
 - Fundamentos de redes neuronales
 - Redes neuronales convolucionales
 - Índices de desempeño (DICE, certeza, AUROC, F1 score)
-- **Examen 3**
 - Uso de modelos preentrenados
 - YOLO y U-Net
 
