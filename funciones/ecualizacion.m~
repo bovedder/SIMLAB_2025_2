@@ -1,0 +1,38 @@
+
+function [y]=ecualizacion(x)
+
+
+L=max(x(:));
+l=min(x(:));
+
+N_tot=length(x(:));
+[NN,XX]=hist(x(:),l:L);
+
+cmf=cumsum(NN)/N_tot;
+
+y=round(cmf(x-l)*L);
+
+[NN_eq,XX_eq]=hist(y(:),l:L);
+
+if nargout==0
+
+    mymap=[linspace(0,1,L-l+1)'*ones(1,3)];
+    figure()
+    colormap(mymap)
+    subplot(221)
+    image(x)
+    axis('equal')
+    title('original')
+
+    subplot(222)
+    image(y)
+    axis('equal')
+    title('ecualizada')
+
+    subplot(223)
+    plot(XX,NN)
+
+    subplot(224)
+    plot(XX_eq,NN_eq)
+end
+

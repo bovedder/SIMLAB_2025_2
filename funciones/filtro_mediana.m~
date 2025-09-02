@@ -1,0 +1,15 @@
+function [y_mediana,y_media,y_std]=filtro_estadistico(x,ventana)
+
+x_norm=double(x)/double(max(x(:)));
+
+
+for i=u+1:N-u
+    for j=v+1:M-v
+        sub_mx=aux_norm(j-v:j+v,i-u:i+u);
+        %sub_mx=ecualizacion(sub_mx);
+        aux_mean(j,i)=mean(sub_mx(:));
+        aux_std(j,i)=var(sub_mx(:));
+        aux_median(j,i)=median(sub_mx(:));
+    end
+end
+
