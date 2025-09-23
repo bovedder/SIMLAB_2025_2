@@ -1,0 +1,91 @@
+% Esta función realiza la corrección de fondo de la imagen "X" estimando
+% la iluminación global mediante un polinomio de tercer orden.
+% Se permite reducir la cantidad de datos a procesar usando el parámetro
+% "paso", que diezmando la imagen facilita el cálculo de los coeficientes
+% del polinomio.
+%
+% [X_bck, background] = background_adjst(X, paso)
+%
+% X: imagen a corregir (puede ser cualquier tipo, se convierte a doble y se
+%    normaliza al rango [0,1])
+% paso: factor de diezmado para construir la estimación del fondo. Por
+%       defecto 10.
+%
+% X_bck: imagen corregida por fondo (normalizada en el rango [0,1])
+% background: estimación de la función de iluminación global
+%
+% El procedimiento es el siguiente:
+% 1. Normaliza la imagen original al rango [0,1].
+% 2. Diezma la imagen usando "paso" para disminuir la carga computacional.
+% 3. Construye la matriz de regresión polinómica de tercer orden para
+%    estimar la iluminación usando pseudoinversa.
+% 4. Estima la función de fondo en toda la imagen usando los coeficientes
+%    obtenidos.
+% 5. Corrige la imagen dividiendo la imagen normalizada por la función de
+%    fondo estimada y vuelve a normalizar.
+%
+% erik [dot] bojorges [at] ibero [dot] mx
+% 2025/09/14
+%
+
+function [X_bck, background] = background_adjst(X, paso, modo)
+
+if nargin<2
+    paso = 10;
+end
+
+if nargin<3
+    modo = 'gauss';
+end
+
+
+[M,N] = size(X);
+
+X_norm = reshape(normalize(X(:),'range'),M,N);
+
+if strcmpi(modo,'gauss')
+    h = fspecial('gaussian', [paso paso], 0.5*paso);
+    background = imfilter(X_norm, h, 'replicate');
+else
+    % Este código es para construir la función de fondo diezmando la imagen a
+    % fin de disminuir el peso del procesamiento
+    X_interp = X_norm(1:paso:end,1:paso:end);
+    
+    [M_interp , N_interp] = size(X_interp);
+    
+    j = linspace(0,1,M_interp);
+    i = linspace(0,1,N_interp);
+    
+    [ii,jj] = meshgrid(i,j);
+    
+    % construccion de la matriz para estimacion de coeficientes del polinomio
+    C = [ jj(:).^3, (jj(:).^2).*ii(:), (ii(:).^2).*jj(:), ii(:).^3, jj(:).^2, ii(:).*jj(:), ii(:).^2, jj(:), ii(:) , ones(M_interp*N_interp,1)];
+    
+    % B son los coeficientes del polinomio de tercer orden estimados por
+    % pseudoinversa
+    % lb = zeros(size(X_interp(:))); % límite inferior >= 0
+    % B = lsqlin(C, X_interp(:), [], [], [], [], lb, []);
+    B = (C'*C)\C' * X_interp(:);
+    
+    %
+    % Ahora se estima la función de fondo usando la cantidad completa de
+    % pixeles
+    [M , N] = size(X_norm);
+    
+    j = linspace(0,1,M);
+    i = linspace(0,1,N);
+    
+    [ii,jj] = meshgrid(i,j);
+    
+    % construccion de la matriz para estimacion de coeficientes del polinomio
+    C = [ jj(:).^3, (jj(:).^2).*ii(:), (ii(:).^2).*jj(:), ii(:).^3, jj(:).^2, ii(:).*jj(:), ii(:).^2, jj(:), ii(:) , ones(M*N,1)];
+    
+    
+    background = reshape(C*B,M,N);
+end
+
+
+%X_bck = 10.^(log10(X_norm+eps)-log10(background+eps));
+%X_bck = reshape(normalize(X_bck(:),'range'),M,N);
+X_bck = X_norm./(background+eps);
+X_bck = reshape(normalize(X_bck(:),'range'),M,N);
